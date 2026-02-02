@@ -1,0 +1,60 @@
+# ==================== STAGE 1: Builder ====================
+FROM python:3.12-alpine AS builder
+
+# Variables de entorno para optimizar Python
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+WORKDIR /app
+
+# Instalar dependencias de compilación necesarias para psycopg2
+RUN apk add --no-cache \
+    gcc \
+    musl-dev \
+    postgresql-dev \
+    python3-dev
+
+# Copiar e instalar dependencias de Python
+COPY requirements.txt .
+RUN pip install --user --no-cache-dir -r requirements.txt
+
+# ==================== STAGE 2: Runtime ====================
+FROM python:3.12-alpine
+
+# Variables de entorno
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app \
+    PATH=/home/appuser/.local/bin:$PATH
+
+WORKDIR /app
+
+# Instalar solo las librerías runtime necesarias (no gcc ni compiladores)
+RUN apk add --no-cache \
+    libpq \
+    curl
+
+# Crear usuario no-root para seguridad
+RUN addgroup -g 1000 appuser && \
+    adduser -D -u 1000 -G appuser appuser
+
+# Copiar dependencias instaladas desde el builder
+COPY --from=builder --chown=appuser:appuser /root/.local /home/appuser/.local
+
+# Copiar código fuente
+COPY --chown=appuser:appuser . .
+
+# Cambiar a usuario no-root
+USER appuser
+
+# Puerto de FastAPI
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# Comando de producción (sin --reload)
+CMD ["uvicorn", "src.api.api:app", "--host", "0.0.0.0", "--port", "8000"]
