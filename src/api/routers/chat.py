@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Body
 from sqlmodel import Session, select
 from typing import List, Optional
 from pydantic import BaseModel
+from datetime import datetime
 
 from src.core.database import get_session
 from src.core.models import Conversation, Message, Client, InferenceSession
@@ -106,6 +107,11 @@ def create_message(
         role=message_data.role,
         content=message_data.content
     )
+    
+    # Actualizar timestamp de la conversación
+    conversation.updated_at = datetime.utcnow()
+    session.add(conversation)
+    
     session.add(message)
     session.commit()
     session.refresh(message)
