@@ -3,6 +3,7 @@ from sqlmodel import Session, select
 from typing import List, Optional
 from pydantic import BaseModel
 from datetime import datetime
+from enum import Enum
 
 from src.core.database import get_session
 from src.core.models import Conversation, Message, Client, InferenceSession
@@ -22,8 +23,13 @@ class SessionLink(BaseModel):
     conversation_id: int
     inference_session_id: str
 
+class MessageRole(str, Enum):
+    USER = "user"
+    ASSISTANT = "assistant"
+    SYSTEM = "system"
+
 class MessageCreate(BaseModel):
-    role: str
+    role: MessageRole
     content: str
 
 # --- Endpoints ---
@@ -104,7 +110,7 @@ def create_message(
         
     message = Message(
         conversation_id=conversation_id,
-        role=message_data.role,
+        role=message_data.role.value,
         content=message_data.content
     )
     
