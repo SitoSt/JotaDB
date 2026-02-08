@@ -1,6 +1,6 @@
 import os
 import time
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.exc import OperationalError
 from sqlmodel import SQLModel, Session
 from dotenv import load_dotenv
@@ -23,19 +23,28 @@ engine = create_engine(
 
 def init_db():
     """
-    Inicializa la base de datos: crea las tablas si no existen.
-    Incluye lógica de reintento robusta.
+    Inicializa la base de datos: verifica la conexión.
+    
+    NOTA: Las tablas ya NO se crean automáticamente aquí.
+    Usa Alembic para gestionar el esquema:
+    - Crear migración: alembic revision --autogenerate -m "descripción"
+    - Aplicar migración: alembic upgrade head
+    
+    Incluye lógica de reintento robusta para esperar a que PostgreSQL esté listo.
     """
     retries = 5
     while retries > 0:
         try:
             print(f"🔄 Intentando conectar a la DB... (Reintentos restantes: {retries})")
             # Importamos los modelos aquí para evitar importaciones circulares
-            from src.core import models 
+            from src.core import models  # noqa: F401
             
-            # Crea todas las tablas definidas en models.py
-            SQLModel.metadata.create_all(engine)
-            print("✅ Base de datos conectada y tablas creadas con éxito.")
+            # Verificar conexión sin crear tablas
+            with Session(engine) as session:
+                session.exec(text("SELECT 1"))
+            
+            print("✅ Base de datos conectada exitosamente.")
+            print("ℹ️  Usa 'alembic upgrade head' para aplicar migraciones.")
             break
         except OperationalError as e:
             retries -= 1

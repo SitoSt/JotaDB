@@ -1,60 +1,48 @@
-# ==================== STAGE 1: Builder ====================
+# ===== STAGE 1: Builder =====
 FROM python:3.12-alpine AS builder
 
-# Variables de entorno para optimizar Python
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+# Instalar dependencias del sistema necesarias para compilar paquetes de Python
+RUN apk add --no-cache gcc musl-dev postgresql-dev
 
+# Crear directorio de trabajo
 WORKDIR /app
 
-# Instalar dependencias de compilación necesarias para psycopg2
-RUN apk add --no-cache \
-    gcc \
-    musl-dev \
-    postgresql-dev \
-    python3-dev
-
-# Copiar e instalar dependencias de Python
+# Copiar requirements e instalar dependencias
 COPY requirements.txt .
-RUN pip install --user --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --user -r requirements.txt
 
-# ==================== STAGE 2: Runtime ====================
+# ===== STAGE 2: Runtime =====
 FROM python:3.12-alpine
 
-# Variables de entorno
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PYTHONPATH=/app \
-    PATH=/home/appuser/.local/bin:$PATH
+# Instalar solo las librerías necesarias en runtime (no compiladores)
+RUN apk add --no-cache libpq
+
+# Crear usuario no-root para ejecutar la aplicación
+RUN adduser -D -u 1000 appuser
+
+# Copiar las dependencias instaladas desde el builder
+COPY --from=builder /root/.local /home/appuser/.local
+
+# Configurar el PATH para que encuentre los paquetes instalados
+ENV PATH=/home/appuser/.local/bin:$PATH
 
 WORKDIR /app
 
-# Instalar solo las librerías runtime necesarias (no gcc ni compiladores)
-RUN apk add --no-cache \
-    libpq \
-    curl
-
-# Crear usuario no-root para seguridad
-RUN addgroup -g 1000 appuser && \
-    adduser -D -u 1000 -G appuser appuser
-
-# Copiar dependencias instaladas desde el builder
-COPY --from=builder --chown=appuser:appuser /root/.local /home/appuser/.local
-
 # Copiar código fuente
-COPY --chown=appuser:appuser . .
+COPY src/ ./src/
+COPY alembic/ ./alembic/
+COPY alembic.ini ./
+COPY entrypoint.sh ./
 
-# Cambiar a usuario no-root
+# Cambiar permisos y propietario
+RUN chown -R appuser:appuser /app && chmod +x entrypoint.sh
+
+# Cambiar al usuario no-root
 USER appuser
-
-# Puerto de FastAPI
-EXPOSE 8000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
+    CMD python3 -c "import requests; requests.get('http://localhost:8000/health')" || exit 1
 
-# Comando de producción (sin --reload)
-CMD ["uvicorn", "src.api.api:app", "--host", "0.0.0.0", "--port", "8000"]
+# Usar entrypoint para ejecutar migraciones antes de iniciar
+ENTRYPOINT ["./entrypoint.sh"]

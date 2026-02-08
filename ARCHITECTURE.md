@@ -10,7 +10,9 @@ src/api/
     ├── __init__.py
     ├── tasks.py              # Router de Tareas
     ├── events.py             # Router de Eventos
-    └── reminders.py          # Router de Recordatorios
+    ├── reminders.py          # Router de Recordatorios
+    ├── auth.py               # Router de Autenticación (Inference/Client)
+    └── chat.py               # Router de Chat (Conversation/Message)
 ```
 
 ## 🎯 Beneficios de la Refactorización
@@ -38,7 +40,28 @@ app = FastAPI(...)
 app.include_router(tasks.router)
 app.include_router(events.router)
 app.include_router(reminders.router)
+app.include_router(auth.router)
+app.include_router(chat.router)
 ```
+
+### `routers/auth.py` - Router de Autenticación
+Maneja la seguridad para dos tipos de clientes:
+
+1. **Internos (InferenceClient)**: Servicios como el Orquestador que acceden al motor de inferencia.
+2. **Externos (Client)**: Aplicaciones de usuario como JotaDesktop.
+
+**Endpoints**:
+- `GET /auth/internal` - Valida credenciales de servicio interno (client_id, api_key)
+- `GET /auth/client` - Valida clientes de escritorio (client_key)
+
+### `routers/chat.py` - Router de Chat
+Gestiona el flujo de conversación, historial y vinculación con sesiones de inferencia.
+
+**Endpoints**:
+- `POST /chat/conversation` - Crea una nueva conversación para un cliente
+- `GET /chat/history/{conversation_id}` - Obtiene todos los mensajes de una conversación
+- `POST /chat/{conversation_id}/messages` - Agrega un mensaje (user/assistant) a la conversación
+- `PATCH /chat/session` - Vincula una conversación existente con una `InferenceSession` activa del motor C++
 
 ### `utils.py` - Utilidades Compartidas
 Funciones reutilizables para optimistic locking y actualización de entidades.
@@ -125,6 +148,8 @@ Los routers están organizados por tags para fácil navegación:
 - 🏷️ **Tasks** - Gestión de tareas
 - 🏷️ **Events** - Gestión de eventos
 - 🏷️ **Reminders** - Gestión de recordatorios
+- 🏷️ **Auth** - Validación de clientes y servicios
+- 🏷️ **Chat** - Conversaciones y mensajes
 
 ## ✅ Pruebas Realizadas
 

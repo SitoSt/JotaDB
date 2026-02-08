@@ -119,6 +119,55 @@ curl -X POST http://localhost:8000/reminders \
 curl "http://localhost:8000/reminders?is_completed=false"
 ```
 
+### Auth (Autenticación)
+
+#### Validar servicio interno (InferenceClient)
+```bash
+curl "http://localhost:8000/auth/internal?client_id=JotaOrchestrator&api_key=secret123"
+```
+
+#### Validar cliente externo (Client)
+```bash
+curl "http://localhost:8000/auth/client?client_key=desktop_client_01"
+```
+
+### Chat (Conversación)
+
+#### Iniciar una conversación
+```bash
+curl -X POST http://localhost:8000/chat/conversation \
+  -H "Content-Type: application/json" \
+  -d '{
+    "client_id": 1,
+    "title": "Ayuda con Python"
+  }'
+```
+
+#### Enviar un mensaje
+```bash
+curl -X POST http://localhost:8000/chat/1/messages \
+  -H "Content-Type: application/json" \
+  -d '{
+    "role": "user",
+    "content": "¿Cómo funciona asyncio?"
+  }'
+```
+
+#### Obtener historial
+```bash
+curl http://localhost:8000/chat/history/1
+```
+
+#### Vincular sesión de inferencia (Motor C++)
+```bash
+curl -X PATCH http://localhost:8000/chat/session \
+  -H "Content-Type: application/json" \
+  -d '{
+    "conversation_id": 1,
+    "inference_session_id": "uuid-generado-por-cpp"
+  }'
+```
+
 ## 🔒 Optimistic Locking (Control de Concurrencia)
 
 El sistema implementa **optimistic locking** para prevenir conflictos cuando múltiples servicios (API + futuro MCP) modifican los mismos datos.
@@ -197,6 +246,13 @@ docker compose up --build -d
 
 # Acceder a la base de datos
 docker exec -it jota_db psql -U user -d jota
+
+# Gestión de Migraciones (Alembic)
+# Generar una nueva migración (después de cambiar modelos)
+docker compose exec api-server alembic revision --autogenerate -m "descripcion_cambios"
+
+# Aplicar migraciones pendientes
+docker compose exec api-server alembic upgrade head
 ```
 
 ### Seguridad
