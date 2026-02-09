@@ -14,7 +14,19 @@ app = FastAPI(
     description="API para gestionar tu ecosistema de datos personal",
     version="1.0.0",
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
+    openapi_url="/openapi.json"
+)
+
+# Configuración de CORS
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Permitir todos los orígenes
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Event handlers

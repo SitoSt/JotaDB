@@ -25,6 +25,8 @@ services:
         condition: service_healthy
     ports:
       - "8002:8000"
+    env_file:
+      - .env
     environment:
       - DATABASE_URL=postgresql://user:pass@db:5432/jota
     restart: unless-stopped

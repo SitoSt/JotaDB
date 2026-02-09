@@ -4,4 +4,5 @@ sqlmodel
 psycopg2-binary
 python-dotenv
 mcp[server]
-alembic
+mcp[server]
+requests

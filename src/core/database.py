@@ -111,12 +111,12 @@ def bootstrap_clients(session: Session):
 
 def init_db():
     """
-    Inicializa la base de datos: verifica la conexión.
+    Inicializa la base de datos: verifica la conexión y crea las tablas.
     
-    NOTA: Inicializa tablas si no existen (Code First).
-    Ya no se usan migraciones obligatorias.
+    NOTA: Se usa SQLModel.metadata.create_all(engine) para auto-provisionamiento.
+    No se requiere Alembic para el primer arranque.
     
-    Includes logic for wait-for-postgres.
+    Incluye lógica de reintento robusta para esperar a que PostgreSQL esté listo.
     """
     retries = 5
     while retries > 0:
@@ -125,16 +125,22 @@ def init_db():
             # Importamos los modelos aquí para evitar importaciones circulares
             from src.core import models  # noqa: F401
             
-            # Crear tablas si no existen
-            SQLModel.metadata.create_all(engine)
-            print("✅ Tablas verificadas/creadas.")
+            # Verificar conexión sin crear tablas
+            with Session(engine) as session:
+                session.exec(text("SELECT 1"))
             
+            print("✅ Base de datos conectada exitosamente.")
+            
+            # Crear tablas automáticamente (sin Alembic por ahora)
+            print("📦 Creando tablas en la base de datos...")
+            SQLModel.metadata.create_all(engine)
+
             # Bootstrap de datos
             with Session(engine) as session:
                 bootstrap_system_clients(session)
                 bootstrap_clients(session)
             
-            print("🚀 Sistema listo.")
+            print("🚀 Sistema inicializado correctamente.")
             break
         except OperationalError as e:
             retries -= 1
