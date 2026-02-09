@@ -47,13 +47,14 @@ def validate_internal_client(
 
 @router.get("/client", response_model=Client)
 def validate_external_client(
-    client_key: str = Query(..., description="Desktop Client Key"),
+    x_api_key: str = Header(..., alias="X-API-Key", description="Desktop Client Key"),
     session: Session = Depends(get_session)
 ):
     """
     Valida un cliente externo (ej: JotaDesktop) para permitir la conexión al Orquestador.
+    Credentials must be provided via HTTP header: X-API-Key.
     """
-    statement = select(Client).where(Client.client_key == client_key)
+    statement = select(Client).where(Client.client_key == x_api_key)
     client = session.exec(statement).first()
     
     if not client:

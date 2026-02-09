@@ -130,6 +130,71 @@ def test_auth_internal():
         print(f"✗ FAIL: {e}")
     
     print("\n" + "=" * 60)
+    print("Testing /auth/client Header-Based Authentication")
+    print("=" * 60)
+    
+    # Test 8: Valid external client key via header (expect 200)
+    print("\n8. Testing Valid External Client Key via Header (Expect 200)...")
+    try:
+        response = requests.get(
+            f"{BASE_URL}/auth/client",
+            headers={
+                "X-API-Key": "desktop_client_01"
+            }
+        )
+        if response.status_code == 200:
+            print(f"✓ PASS: Got 200 OK")
+            print(f"  Response: {response.json()}")
+        else:
+            print(f"✗ FAIL: Got {response.status_code}")
+            print(f"  Response: {response.text}")
+    except Exception as e:
+        print(f"✗ FAIL: {e}")
+    
+    # Test 9: Missing X-API-Key header for /auth/client (expect 422)
+    print("\n9. Testing Missing X-API-Key Header for /auth/client (Expect 422)...")
+    try:
+        response = requests.get(f"{BASE_URL}/auth/client")
+        if response.status_code == 422:
+            print(f"✓ PASS: Got 422 Unprocessable Entity")
+        else:
+            print(f"✗ FAIL: Got {response.status_code}")
+            print(f"  Response: {response.text}")
+    except Exception as e:
+        print(f"✗ FAIL: {e}")
+    
+    # Test 10: Invalid client key for /auth/client (expect 401)
+    print("\n10. Testing Invalid Client Key for /auth/client (Expect 401)...")
+    try:
+        response = requests.get(
+            f"{BASE_URL}/auth/client",
+            headers={
+                "X-API-Key": "invalid_desktop_key"
+            }
+        )
+        if response.status_code == 401:
+            print(f"✓ PASS: Got 401 Unauthorized")
+        else:
+            print(f"✗ FAIL: Got {response.status_code}")
+            print(f"  Response: {response.text}")
+    except Exception as e:
+        print(f"✗ FAIL: {e}")
+    
+    # Test 11: Query parameter should NOT work for /auth/client (expect 422)
+    print("\n11. Testing Query Parameter for /auth/client (Should NOT Work - Expect 422)...")
+    try:
+        response = requests.get(
+            f"{BASE_URL}/auth/client?client_key=desktop_client_01"
+        )
+        if response.status_code == 422:
+            print(f"✓ PASS: Got 422 - Query params correctly rejected")
+        else:
+            print(f"✗ FAIL: Got {response.status_code} - Query params should not work!")
+            print(f"  Response: {response.text}")
+    except Exception as e:
+        print(f"✗ FAIL: {e}")
+    
+    print("\n" + "=" * 60)
     print("Test Suite Completed")
     print("=" * 60)
 
