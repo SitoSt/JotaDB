@@ -21,6 +21,55 @@ engine = create_engine(
     pool_recycle=3600,          # Recicla conexiones cada hora (evita conexiones obsoletas)
 )
 
+def bootstrap_system_clients(session: Session):
+    """
+    Carga los servicios internos 'core' desde variables de entorno.
+    Estos son necesarios para que el sistema funcione (Orchestrator <-> Inference).
+    NO toca la tabla Client (usuarios/tablets).
+    Es idempotente: si ya existen, no hace nada.
+    """
+    from src.core.models import InferenceClient
+    from sqlmodel import select
+
+    # Definir los servicios requeridos
+    services = [
+        {
+            "id": os.getenv("INTERNAL_ORCHESTRATOR_ID"),
+            "key": os.getenv("INTERNAL_ORCHESTRATOR_KEY"),
+            "role": "admin"
+        },
+        {
+            "id": os.getenv("INTERNAL_INFERENCE_ID"),
+            "key": os.getenv("INTERNAL_INFERENCE_KEY"),
+            "role": "admin"
+        }
+    ]
+
+    print("🚀 Verificando servicios internos (Bootstrap)...")
+    
+    for svc in services:
+        if not svc["id"] or not svc["key"]:
+            print(f"⚠️  Faltan credenciales para un servicio interno en .env. Saltando...")
+            continue
+
+        # Verificar existencia
+        statement = select(InferenceClient).where(InferenceClient.client_id == svc["id"])
+        existing = session.exec(statement).first()
+
+        if not existing:
+            print(f"🛠️  Creando servicio interno: {svc['id']}")
+            new_client = InferenceClient(
+                client_id=svc["id"],
+                api_key=svc["key"],
+                role=svc["role"],
+                is_active=True
+            )
+            session.add(new_client)
+        else:
+            print(f"✅ Servicio interno ya existe: {svc['id']}")
+    
+    session.commit()
+
 def init_db():
     """
     Inicializa la base de datos: verifica la conexión.
@@ -44,6 +93,11 @@ def init_db():
                 session.exec(text("SELECT 1"))
             
             print("✅ Base de datos conectada exitosamente.")
+            
+            # Bootstrap de servicios internos
+            with Session(engine) as session:
+                bootstrap_system_clients(session)
+            
             print("ℹ️  Usa 'alembic upgrade head' para aplicar migraciones.")
             break
         except OperationalError as e:
