@@ -70,16 +70,53 @@ def bootstrap_system_clients(session: Session):
     
     session.commit()
 
+def bootstrap_clients(session: Session):
+    """
+    Carga los clientes externos (ej: Desktop App) desde variables de entorno.
+    """
+    from src.core.models import Client
+    from sqlmodel import select
+
+    # Ejemplo de estructura de variable: CLIENT_1_NAME=X, CLIENT_1_KEY=Y
+    # Por simplicidad, buscamos una lista predefinida o un patrón
+    # Aquí buscamos CLIENT_DESKTOP
+    clients_to_load = [
+        {
+            "name": os.getenv("CLIENT_DESKTOP_NAME", "Desktop Client"),
+            "key": os.getenv("CLIENT_DESKTOP_KEY", "desktop_client_01")
+        }
+    ]
+
+    print("🚀 Verificando clientes externos (Bootstrap)...")
+    
+    for c_data in clients_to_load:
+        if not c_data["key"]:
+            continue
+            
+        statement = select(Client).where(Client.client_key == c_data["key"])
+        existing = session.exec(statement).first()
+        
+        if not existing:
+             print(f"🛠️  Creando cliente: {c_data['name']}")
+             new_client = Client(
+                 name=c_data["name"],
+                 client_key=c_data["key"],
+                 is_active=True
+             )
+             session.add(new_client)
+        else:
+             print(f"✅ Cliente ya existe: {c_data['name']}")
+    
+    session.commit()
+
 def init_db():
     """
     Inicializa la base de datos: verifica la conexión.
     
-    NOTA: Las tablas ya NO se crean automáticamente aquí.
-    Usa Alembic para gestionar el esquema:
-    - Crear migración: alembic revision --autogenerate -m "descripción"
-    - Aplicar migración: alembic upgrade head
+    NOTA: Inicializa tablas si no existen (Code First).
+    Ya no se usan migraciones obligatorias.
     
-    Incluye lógica de reintento robusta para esperar a que PostgreSQL esté listo.
+    Includes logic for wait-for-postgres.
     """
     retries = 5
     while retries > 0:
@@ -88,17 +125,16 @@ def init_db():
             # Importamos los modelos aquí para evitar importaciones circulares
             from src.core import models  # noqa: F401
             
-            # Verificar conexión sin crear tablas
-            with Session(engine) as session:
-                session.exec(text("SELECT 1"))
+            # Crear tablas si no existen
+            SQLModel.metadata.create_all(engine)
+            print("✅ Tablas verificadas/creadas.")
             
-            print("✅ Base de datos conectada exitosamente.")
-            
-            # Bootstrap de servicios internos
+            # Bootstrap de datos
             with Session(engine) as session:
                 bootstrap_system_clients(session)
+                bootstrap_clients(session)
             
-            print("ℹ️  Usa 'alembic upgrade head' para aplicar migraciones.")
+            print("🚀 Sistema listo.")
             break
         except OperationalError as e:
             retries -= 1
