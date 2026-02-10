@@ -8,6 +8,7 @@ from enum import Enum
 from src.core.database import get_session
 from src.core.models import Conversation, Message, Client, InferenceSession
 from src.api.dependencies import get_current_client
+from src.api.security import verify_api_key
 
 router = APIRouter(
     prefix="/chat",
@@ -38,7 +39,8 @@ class MessageCreate(BaseModel):
 def create_conversation(
     conv_data: ConversationCreate, 
     session: Session = Depends(get_session),
-    client: Client = Depends(get_current_client)
+    client: Client = Depends(get_current_client),
+    _: bool = Depends(verify_api_key)
 ):
     """Crea una nueva conversación para un cliente autenticado"""
     # El cliente ya viene validado por get_current_client
@@ -56,7 +58,8 @@ def create_conversation(
 def get_conversation_history(
     conversation_id: int, 
     session: Session = Depends(get_session),
-    client: Client = Depends(get_current_client)
+    client: Client = Depends(get_current_client),
+    _: bool = Depends(verify_api_key)
 ):
     """Obtiene el historial de mensajes de una conversación"""
     conversation = session.get(Conversation, conversation_id)
@@ -78,7 +81,8 @@ def get_conversation_history(
 def link_inference_session(
     link_data: SessionLink,
     session: Session = Depends(get_session),
-    client: Client = Depends(get_current_client)
+    client: Client = Depends(get_current_client),
+    _: bool = Depends(verify_api_key)
 ):
     """Vincula una Conversation con una InferenceSession activa"""
     conversation = session.get(Conversation, link_data.conversation_id)
@@ -110,7 +114,8 @@ def create_message(
     conversation_id: int,
     message_data: MessageCreate,
     session: Session = Depends(get_session),
-    client: Client = Depends(get_current_client)
+    client: Client = Depends(get_current_client),
+    _: bool = Depends(verify_api_key)
 ):
     """Agrega un mensaje a una conversación"""
     conversation = session.get(Conversation, conversation_id)

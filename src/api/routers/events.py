@@ -9,6 +9,7 @@ from datetime import datetime
 from src.core.database import get_session
 from src.core.models import Event
 from src.api.utils import apply_optimistic_locking, update_entity_fields, increment_version
+from src.api.security import verify_api_key
 
 router = APIRouter(
     prefix="/events",
@@ -18,7 +19,11 @@ router = APIRouter(
 
 
 @router.post("", response_model=Event, status_code=status.HTTP_201_CREATED)
-def create_event(event: Event, session: Session = Depends(get_session)):
+def create_event(
+    event: Event,
+    session: Session = Depends(get_session),
+    _: bool = Depends(verify_api_key)
+):
     """Crear un nuevo evento"""
     session.add(event)
     session.commit()
@@ -31,7 +36,8 @@ def read_events(
     start_after: Optional[datetime] = None,
     start_before: Optional[datetime] = None,
     all_day: Optional[bool] = None,
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
+    _: bool = Depends(verify_api_key)
 ):
     """Listar todos los eventos con filtros opcionales"""
     query = select(Event)
@@ -48,7 +54,11 @@ def read_events(
 
 
 @router.get("/{event_id}", response_model=Event)
-def read_event(event_id: int, session: Session = Depends(get_session)):
+def read_event(
+    event_id: int,
+    session: Session = Depends(get_session),
+    _: bool = Depends(verify_api_key)
+):
     """Obtener un evento específico por ID"""
     event = session.get(Event, event_id)
     if not event:
@@ -60,7 +70,8 @@ def read_event(event_id: int, session: Session = Depends(get_session)):
 def update_event(
     event_id: int,
     event_update: dict,
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
+    _: bool = Depends(verify_api_key)
 ):
     """
     Actualizar un evento existente con optimistic locking.
@@ -86,7 +97,11 @@ def update_event(
 
 
 @router.delete("/{event_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_event(event_id: int, session: Session = Depends(get_session)):
+def delete_event(
+    event_id: int,
+    session: Session = Depends(get_session),
+    _: bool = Depends(verify_api_key)
+):
     """Eliminar un evento"""
     event = session.get(Event, event_id)
     if not event:

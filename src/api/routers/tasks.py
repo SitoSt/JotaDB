@@ -8,6 +8,7 @@ from typing import List, Optional
 from src.core.database import get_session
 from src.core.models import Task
 from src.api.utils import apply_optimistic_locking, update_entity_fields, increment_version
+from src.api.security import verify_api_key
 
 router = APIRouter(
     prefix="/tasks",
@@ -17,7 +18,11 @@ router = APIRouter(
 
 
 @router.post("", response_model=Task, status_code=status.HTTP_201_CREATED)
-def create_task(task: Task, session: Session = Depends(get_session)):
+def create_task(
+    task: Task,
+    session: Session = Depends(get_session),
+    _: bool = Depends(verify_api_key)
+):
     """Crear una nueva tarea"""
     session.add(task)
     session.commit()
@@ -30,7 +35,8 @@ def read_tasks(
     status_filter: Optional[str] = None,
     priority: Optional[int] = None,
     event_id: Optional[int] = None,
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
+    _: bool = Depends(verify_api_key)
 ):
     """Listar todas las tareas con filtros opcionales"""
     query = select(Task)
@@ -47,7 +53,11 @@ def read_tasks(
 
 
 @router.get("/{task_id}", response_model=Task)
-def read_task(task_id: int, session: Session = Depends(get_session)):
+def read_task(
+    task_id: int,
+    session: Session = Depends(get_session),
+    _: bool = Depends(verify_api_key)
+):
     """Obtener una tarea específica por ID"""
     task = session.get(Task, task_id)
     if not task:
@@ -59,7 +69,8 @@ def read_task(task_id: int, session: Session = Depends(get_session)):
 def update_task(
     task_id: int,
     task_update: dict,
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
+    _: bool = Depends(verify_api_key)
 ):
     """
     Actualizar una tarea existente con optimistic locking.
@@ -85,7 +96,11 @@ def update_task(
 
 
 @router.delete("/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_task(task_id: int, session: Session = Depends(get_session)):
+def delete_task(
+    task_id: int,
+    session: Session = Depends(get_session),
+    _: bool = Depends(verify_api_key)
+):
     """Eliminar una tarea"""
     task = session.get(Task, task_id)
     if not task:

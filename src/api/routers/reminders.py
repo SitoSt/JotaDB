@@ -9,6 +9,7 @@ from datetime import datetime
 from src.core.database import get_session
 from src.core.models import Reminder
 from src.api.utils import apply_optimistic_locking, update_entity_fields, increment_version
+from src.api.security import verify_api_key
 
 router = APIRouter(
     prefix="/reminders",
@@ -18,7 +19,11 @@ router = APIRouter(
 
 
 @router.post("", response_model=Reminder, status_code=status.HTTP_201_CREATED)
-def create_reminder(reminder: Reminder, session: Session = Depends(get_session)):
+def create_reminder(
+    reminder: Reminder,
+    session: Session = Depends(get_session),
+    _: bool = Depends(verify_api_key)
+):
     """Crear un nuevo recordatorio"""
     session.add(reminder)
     session.commit()
@@ -33,7 +38,8 @@ def read_reminders(
     event_id: Optional[int] = None,
     trigger_after: Optional[datetime] = None,
     trigger_before: Optional[datetime] = None,
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
+    _: bool = Depends(verify_api_key)
 ):
     """Listar todos los recordatorios con filtros opcionales"""
     query = select(Reminder)
@@ -54,7 +60,11 @@ def read_reminders(
 
 
 @router.get("/{reminder_id}", response_model=Reminder)
-def read_reminder(reminder_id: int, session: Session = Depends(get_session)):
+def read_reminder(
+    reminder_id: int,
+    session: Session = Depends(get_session),
+    _: bool = Depends(verify_api_key)
+):
     """Obtener un recordatorio específico por ID"""
     reminder = session.get(Reminder, reminder_id)
     if not reminder:
@@ -66,7 +76,8 @@ def read_reminder(reminder_id: int, session: Session = Depends(get_session)):
 def update_reminder(
     reminder_id: int,
     reminder_update: dict,
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
+    _: bool = Depends(verify_api_key)
 ):
     """
     Actualizar un recordatorio existente con optimistic locking.
@@ -92,7 +103,11 @@ def update_reminder(
 
 
 @router.delete("/{reminder_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_reminder(reminder_id: int, session: Session = Depends(get_session)):
+def delete_reminder(
+    reminder_id: int,
+    session: Session = Depends(get_session),
+    _: bool = Depends(verify_api_key)
+):
     """Eliminar un recordatorio"""
     reminder = session.get(Reminder, reminder_id)
     if not reminder:

@@ -4,6 +4,7 @@ from typing import Optional
 
 from src.core.database import get_session
 from src.core.models import InferenceClient, Client
+from src.api.security import verify_api_key
 
 router = APIRouter(
     prefix="/auth",
@@ -15,11 +16,12 @@ router = APIRouter(
 def validate_internal_client(
     x_client_id: str = Header(..., alias="X-Client-ID", description="Service Identifier"),
     x_api_key: str = Header(..., alias="X-API-Key", description="Service API Key"),
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
+    _: bool = Depends(verify_api_key)
 ):
     """
     Valida un servicio interno (ej: JotaOrchestrator) para permitir el uso del motor de C++.
-    Credentials must be provided via HTTP headers: X-Client-ID and X-API-Key.
+    Requires Bearer token + X-Client-ID + X-API-Key headers.
     """
     statement = select(InferenceClient).where(InferenceClient.client_id == x_client_id)
     client = session.exec(statement).first()
@@ -48,11 +50,12 @@ def validate_internal_client(
 @router.get("/client", response_model=Client)
 def validate_external_client(
     x_api_key: str = Header(..., alias="X-API-Key", description="Desktop Client Key"),
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
+    _: bool = Depends(verify_api_key)
 ):
     """
     Valida un cliente externo (ej: JotaDesktop) para permitir la conexión al Orquestador.
-    Credentials must be provided via HTTP header: X-API-Key.
+    Requires Bearer token + X-API-Key header.
     """
     statement = select(Client).where(Client.client_key == x_api_key)
     client = session.exec(statement).first()
