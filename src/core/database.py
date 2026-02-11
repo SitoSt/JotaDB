@@ -77,15 +77,27 @@ def bootstrap_clients(session: Session):
     from src.core.models import Client
     from sqlmodel import select
 
-    # Ejemplo de estructura de variable: CLIENT_1_NAME=X, CLIENT_1_KEY=Y
-    # Por simplicidad, buscamos una lista predefinida o un patrón
-    # Aquí buscamos CLIENT_DESKTOP
-    clients_to_load = [
-        {
+    import json
+    
+    clients_to_load = []
+
+    # 1. Cargar desde JOTA_CLIENTS (JSON List)
+    # Ejemplo: JOTA_CLIENTS='[{"name": "Mobile", "key": "mobile_01"}, {"name": "Test", "key": "test_key"}]'
+    jota_clients_env = os.getenv("JOTA_CLIENTS")
+    if jota_clients_env:
+        try:
+            clients_to_load.extend(json.loads(jota_clients_env))
+            print(f"📦 Cargados {len(clients_to_load)} clientes desde JOTA_CLIENTS")
+        except json.JSONDecodeError as e:
+            print(f"❌ Error al parsear JOTA_CLIENTS: {e}")
+
+    # 2. Cargar variables individuales (Legacy/Simple)
+    desktop_key = os.getenv("CLIENT_DESKTOP_KEY", "desktop_client_01")
+    if desktop_key:
+        clients_to_load.append({
             "name": os.getenv("CLIENT_DESKTOP_NAME", "Desktop Client"),
-            "key": os.getenv("CLIENT_DESKTOP_KEY", "desktop_client_01")
-        }
-    ]
+            "key": desktop_key
+        })
 
     print("🚀 Verificando clientes externos (Bootstrap)...")
     
