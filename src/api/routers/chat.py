@@ -93,15 +93,9 @@ def link_inference_session(
     if conversation.client_id != client.id:
          raise HTTPException(status_code=403, detail="Not authorized to modify this conversation")
     
-    # Validar que la sesión de inferencia exista (Opcional, pero recomendado)
-    # Nota: El user dijo "InferenceSession: Seguimiento del motor de C++", 
-    # session_id es un string único en InferenceSession.
-    statement = select(InferenceSession).where(InferenceSession.session_id == link_data.inference_session_id)
-    inf_session = session.exec(statement).first()
-    
-    if not inf_session:
-        # Podríamos permitirlo si se confía en el orquestador, pero mejor validar.
-        raise HTTPException(status_code=404, detail="Inference Session not found")
+    # Validar que la sesión de inferencia exista (Opcional)
+    # Ya que The Orchestrator es un servicio de confianza y el motor de C++ 
+    # actualmente no inserta InferenceSession en la BD, nos saltamos la validación estricta.
 
     conversation.inference_session_id = link_data.inference_session_id
     session.add(conversation)
