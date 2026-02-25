@@ -52,6 +52,23 @@ def create_conversation(
     session.refresh(conversation)
     return conversation
 
+@router.get("/conversations", response_model=List[Conversation])
+def list_conversations(
+    limit: Optional[int] = 50,
+    status_filter: Optional[str] = None,
+    session: Session = Depends(get_session),
+    client: Client = Depends(get_current_client),
+    _: bool = Depends(verify_api_key)
+):
+    """Lista las conversaciones del cliente autenticado, ordenadas por actualización más reciente."""
+    query = select(Conversation).where(Conversation.client_id == client.id)
+    
+    if status_filter:
+        query = query.where(Conversation.status == status_filter)
+        
+    query = query.order_by(Conversation.updated_at.desc()).limit(limit)
+    return session.exec(query).all()
+
 @router.get("/{conversation_id}/messages", response_model=List[Message])
 def get_conversation_messages(
     conversation_id: int,

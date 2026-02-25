@@ -30,6 +30,7 @@ def verify_implementation():
                 "/auth/internal",
                 "/auth/client",
                 "/chat/conversation",
+                "/chat/conversations",
                 "/chat/{conversation_id}/messages"
             ]
             
