@@ -92,8 +92,6 @@ def get_conversation_messages(
     messages = session.exec(statement).all()
     return messages
 
-
-
 @router.post("/{conversation_id}/messages", response_model=Message, status_code=status.HTTP_201_CREATED)
 def create_message(
     conversation_id: int,

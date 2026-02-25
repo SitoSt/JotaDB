@@ -87,15 +87,6 @@ def bootstrap_clients(session: Session):
             print(f"📦 Cargados {len(clients_to_load)} clientes desde JOTA_CLIENTS")
         except json.JSONDecodeError as e:
             print(f"❌ Error al parsear JOTA_CLIENTS: {e}")
-
-    # 2. Cargar variables individuales (Legacy/Simple)
-    desktop_key = os.getenv("CLIENT_DESKTOP_KEY", "desktop_client_01")
-    if desktop_key:
-        clients_to_load.append({
-            "name": os.getenv("CLIENT_DESKTOP_NAME", "Desktop Client"),
-            "key": desktop_key
-        })
-
     print("🚀 Verificando clientes externos (Bootstrap)...")
     
     for c_data in clients_to_load:
