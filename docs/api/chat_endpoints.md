@@ -7,7 +7,7 @@ Estos endpoints gestionan el ciclo de vida de las conversaciones del usuario y e
 
 ---
 
-## `POST /conversation`
+## `POST /conversations`
 Crea una nueva conversación para el cliente autenticado.
 
 **Request Body (JSON)**:

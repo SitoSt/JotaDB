@@ -33,7 +33,7 @@ class MessageCreate(BaseModel):
 
 # --- Endpoints ---
 
-@router.post("/conversation", response_model=Conversation, status_code=status.HTTP_201_CREATED)
+@router.post("/conversations", response_model=Conversation, status_code=status.HTTP_201_CREATED)
 def create_conversation(
     conv_data: ConversationCreate, 
     session: Session = Depends(get_session),

@@ -51,13 +51,13 @@ def bootstrap_system_clients(session: Session):
             continue
 
         # Verificar existencia
-        statement = select(InferenceClient).where(InferenceClient.client_id == svc["id"])
+        statement = select(InferenceClient).where(InferenceClient.id == svc["id"])
         existing = session.exec(statement).first()
 
         if not existing:
             print(f"🛠️  Creando servicio interno: {svc['id']}")
             new_client = InferenceClient(
-                client_id=svc["id"],
+                id=svc["id"],
                 api_key=svc["key"],
                 is_active=True
             )
@@ -99,6 +99,7 @@ def bootstrap_clients(session: Session):
         if not existing:
              print(f"🛠️  Creando cliente: {c_data['name']}")
              new_client = Client(
+                 id=c_data["name"],
                  name=c_data["name"],
                  client_key=c_data["key"],
                  is_active=True

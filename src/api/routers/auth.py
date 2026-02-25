@@ -23,7 +23,7 @@ def validate_internal_client(
     Valida un servicio interno (ej: JotaOrchestrator) para permitir el uso del motor de C++.
     Requires Bearer token + X-Service-ID + X-API-Key headers.
     """
-    statement = select(InferenceClient).where(InferenceClient.client_id == x_service_id)
+    statement = select(InferenceClient).where(InferenceClient.id == x_service_id)
     client = session.exec(statement).first()
     
     if not client:
