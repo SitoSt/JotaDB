@@ -14,16 +14,16 @@ router = APIRouter(
 
 @router.get("/internal", response_model=InferenceClient)
 def validate_internal_client(
-    x_client_id: str = Header(..., alias="X-Client-ID", description="Service Identifier"),
+    x_service_id: str = Header(..., alias="X-Service-ID", description="Service Identifier"),
     x_api_key: str = Header(..., alias="X-API-Key", description="Service API Key"),
     session: Session = Depends(get_session),
     _: bool = Depends(verify_api_key)
 ):
     """
     Valida un servicio interno (ej: JotaOrchestrator) para permitir el uso del motor de C++.
-    Requires Bearer token + X-Client-ID + X-API-Key headers.
+    Requires Bearer token + X-Service-ID + X-API-Key headers.
     """
-    statement = select(InferenceClient).where(InferenceClient.client_id == x_client_id)
+    statement = select(InferenceClient).where(InferenceClient.client_id == x_service_id)
     client = session.exec(statement).first()
     
     if not client:

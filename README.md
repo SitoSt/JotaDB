@@ -123,12 +123,17 @@ curl "http://localhost:8000/reminders?is_completed=false"
 
 #### Validar servicio interno (InferenceClient)
 ```bash
-curl "http://localhost:8000/auth/internal?client_id=JotaOrchestrator&api_key=secret123"
+curl "http://localhost:8000/auth/internal" \
+  -H "X-Service-ID: JotaOrchestrator" \
+  -H "X-API-Key: secret123" \
+  -H "Authorization: Bearer <API_SECRET_KEY>"
 ```
 
 #### Validar cliente externo (Client)
 ```bash
-curl "http://localhost:8000/auth/client?client_key=desktop_client_01"
+curl "http://localhost:8000/auth/client" \
+  -H "X-API-Key: desktop_client_01" \
+  -H "Authorization: Bearer <API_SECRET_KEY>"
 ```
 
 ### Chat (Conversación)
@@ -153,19 +158,12 @@ curl -X POST http://localhost:8000/chat/1/messages \
   }'
 ```
 
-#### Obtener historial
+#### Obtener mensajes de una conversación
 ```bash
-curl http://localhost:8000/chat/history/1
-```
+curl http://localhost:8000/chat/1/messages
 
-#### Vincular sesión de inferencia (Motor C++)
-```bash
-curl -X PATCH http://localhost:8000/chat/session \
-  -H "Content-Type: application/json" \
-  -d '{
-    "conversation_id": 1,
-    "inference_session_id": "uuid-generado-por-cpp"
-  }'
+# Con límite de mensajes
+curl "http://localhost:8000/chat/1/messages?limit=10"
 ```
 
 ## 🔒 Optimistic Locking (Control de Concurrencia)

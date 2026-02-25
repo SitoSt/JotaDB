@@ -12,7 +12,7 @@ def verify_implementation():
     
     # 1. Verify Models Import
     try:
-        from src.core.models import InferenceClient, InferenceSession, Conversation, Message, Client
+        from src.core.models import InferenceClient, Conversation, Message, Client
         print("✅ Models imported successfully.")
     except ImportError as e:
         print(f"❌ Failed to import models: {e}")
@@ -30,8 +30,6 @@ def verify_implementation():
                 "/auth/internal",
                 "/auth/client",
                 "/chat/conversation",
-                "/chat/history/{conversation_id}",
-                "/chat/session",
                 "/chat/{conversation_id}/messages"
             ]
             

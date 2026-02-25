@@ -35,13 +35,11 @@ def bootstrap_system_clients(session: Session):
     services = [
         {
             "id": os.getenv("INTERNAL_ORCHESTRATOR_ID"),
-            "key": os.getenv("INTERNAL_ORCHESTRATOR_KEY"),
-            "role": "admin"
+            "key": os.getenv("INTERNAL_ORCHESTRATOR_KEY")
         },
         {
             "id": os.getenv("INTERNAL_INFERENCE_ID"),
-            "key": os.getenv("INTERNAL_INFERENCE_KEY"),
-            "role": "admin"
+            "key": os.getenv("INTERNAL_INFERENCE_KEY")
         }
     ]
 
@@ -61,7 +59,6 @@ def bootstrap_system_clients(session: Session):
             new_client = InferenceClient(
                 client_id=svc["id"],
                 api_key=svc["key"],
-                role=svc["role"],
                 is_active=True
             )
             session.add(new_client)

@@ -117,7 +117,7 @@ def main():
         "GET",
         f"{BASE_URL}/auth/internal",
         headers={
-            "X-Client-ID": ORCHESTRATOR_ID,
+            "X-Service-ID": ORCHESTRATOR_ID,
             "X-API-Key": ORCHESTRATOR_KEY
         },
         expected_status=401
@@ -130,7 +130,7 @@ def main():
         f"{BASE_URL}/auth/internal",
         headers={
             "Authorization": f"Bearer {API_SECRET_KEY}",
-            "X-Client-ID": ORCHESTRATOR_ID,
+            "X-Service-ID": ORCHESTRATOR_ID,
             "X-API-Key": ORCHESTRATOR_KEY
         },
         expected_status=200

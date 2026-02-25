@@ -6,7 +6,7 @@ from datetime import datetime
 from enum import Enum
 
 from src.core.database import get_session
-from src.core.models import Conversation, Message, Client, InferenceSession
+from src.core.models import Conversation, Message, Client
 from src.api.dependencies import get_current_client
 from src.api.security import verify_api_key
 
@@ -20,9 +20,7 @@ router = APIRouter(
 class ConversationCreate(BaseModel):
     title: Optional[str] = None
 
-class SessionLink(BaseModel):
-    conversation_id: int
-    inference_session_id: str
+
 
 class MessageRole(str, Enum):
     USER = "user"
@@ -54,14 +52,15 @@ def create_conversation(
     session.refresh(conversation)
     return conversation
 
-@router.get("/history/{conversation_id}", response_model=List[Message])
-def get_conversation_history(
-    conversation_id: int, 
+@router.get("/{conversation_id}/messages", response_model=List[Message])
+def get_conversation_messages(
+    conversation_id: int,
+    limit: Optional[int] = None,
     session: Session = Depends(get_session),
     client: Client = Depends(get_current_client),
     _: bool = Depends(verify_api_key)
 ):
-    """Obtiene el historial de mensajes de una conversación"""
+    """Obtiene los mensajes de una conversación en orden cronológico"""
     conversation = session.get(Conversation, conversation_id)
     if not conversation:
         raise HTTPException(status_code=404, detail="Conversation not found")
@@ -70,44 +69,13 @@ def get_conversation_history(
     if conversation.client_id != client.id:
          raise HTTPException(status_code=403, detail="Not authorized to access this conversation")
         
-    # Usar query explícita para asegurar orden si es necesario, 
-    # aunque la relación back_populates debería traerlos.
-    # Por defecto BaseUUIDModel tiene created_at, ordenamos por eso.
     statement = select(Message).where(Message.conversation_id == conversation_id).order_by(Message.created_at)
+    if limit is not None:
+        statement = statement.limit(limit)
     messages = session.exec(statement).all()
     return messages
 
-@router.patch("/session", response_model=Conversation)
-def link_inference_session(
-    link_data: SessionLink,
-    session: Session = Depends(get_session),
-    client: Client = Depends(get_current_client),
-    _: bool = Depends(verify_api_key)
-):
-    """Vincula una Conversation con una InferenceSession activa"""
-    conversation = session.get(Conversation, link_data.conversation_id)
-    if not conversation:
-        raise HTTPException(status_code=404, detail="Conversation not found")
 
-    # Verificar propiedad
-    if conversation.client_id != client.id:
-         raise HTTPException(status_code=403, detail="Not authorized to modify this conversation")
-    
-    # Validar que la sesión de inferencia exista (Opcional, pero recomendado)
-    # Nota: El user dijo "InferenceSession: Seguimiento del motor de C++", 
-    # session_id es un string único en InferenceSession.
-    statement = select(InferenceSession).where(InferenceSession.session_id == link_data.inference_session_id)
-    inf_session = session.exec(statement).first()
-    
-    if not inf_session:
-        # Podríamos permitirlo si se confía en el orquestador, pero mejor validar.
-        raise HTTPException(status_code=404, detail="Inference Session not found")
-
-    conversation.inference_session_id = link_data.inference_session_id
-    session.add(conversation)
-    session.commit()
-    session.refresh(conversation)
-    return conversation
 
 @router.post("/{conversation_id}/messages", response_model=Message, status_code=status.HTTP_201_CREATED)
 def create_message(

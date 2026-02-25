@@ -20,7 +20,7 @@ def test_auth_internal():
         response = requests.get(
             f"{BASE_URL}/auth/internal",
             headers={
-                "X-Client-ID": "orchestrator_service",
+                "X-Service-ID": "orchestrator_service",
                 "X-API-Key": "change_this_secure_key"
             }
         )
@@ -33,8 +33,8 @@ def test_auth_internal():
     except Exception as e:
         print(f"✗ FAIL: {e}")
     
-    # Test 2: Missing X-Client-ID header (expect 422)
-    print("\n2. Testing Missing X-Client-ID Header (Expect 422)...")
+    # Test 2: Missing X-Service-ID header (expect 422)
+    print("\n2. Testing Missing X-Service-ID Header (Expect 422)...")
     try:
         response = requests.get(
             f"{BASE_URL}/auth/internal",
@@ -56,7 +56,7 @@ def test_auth_internal():
         response = requests.get(
             f"{BASE_URL}/auth/internal",
             headers={
-                "X-Client-ID": "orchestrator_service"
+                "X-Service-ID": "orchestrator_service"
             }
         )
         if response.status_code == 422:
@@ -79,13 +79,13 @@ def test_auth_internal():
     except Exception as e:
         print(f"✗ FAIL: {e}")
     
-    # Test 5: Invalid client_id (expect 401)
-    print("\n5. Testing Invalid Client ID (Expect 401)...")
+    # Test 5: Invalid service_id (expect 401)
+    print("\n5. Testing Invalid Service ID (Expect 401)...")
     try:
         response = requests.get(
             f"{BASE_URL}/auth/internal",
             headers={
-                "X-Client-ID": "invalid_client",
+                "X-Service-ID": "invalid_client",
                 "X-API-Key": "change_this_secure_key"
             }
         )
@@ -103,7 +103,7 @@ def test_auth_internal():
         response = requests.get(
             f"{BASE_URL}/auth/internal",
             headers={
-                "X-Client-ID": "orchestrator_service",
+                "X-Service-ID": "orchestrator_service",
                 "X-API-Key": "invalid_key"
             }
         )
@@ -119,7 +119,7 @@ def test_auth_internal():
     print("\n7. Testing Query Parameters (Should NOT Work - Expect 422)...")
     try:
         response = requests.get(
-            f"{BASE_URL}/auth/internal?client_id=orchestrator_service&api_key=change_this_secure_key"
+            f"{BASE_URL}/auth/internal?service_id=orchestrator_service&api_key=change_this_secure_key"
         )
         if response.status_code == 422:
             print(f"✓ PASS: Got 422 - Query params correctly rejected")

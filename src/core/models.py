@@ -60,25 +60,15 @@ class Reminder(BaseUUIDModel, table=True):
 class InferenceClient(BaseUUIDModel, table=True):
     client_id: str = Field(unique=True, index=True) # Identificador del servicio (ej: "JotaOrchestrator")
     api_key: str # Clave secreta
-    role: str = Field(default="user") # admin, user
-    max_sessions: int = Field(default=1)
     is_active: bool = Field(default=True)
 
-class InferenceSession(BaseUUIDModel, table=True):
-    session_id: str = Field(unique=True, index=True) # ID generado por C++
-    status: str = Field(default="active") # active, closed, error
-    context_summary: Optional[str] = None
-    
-    # Foreign Key to InferenceClient
-    client_db_id: int = Field(foreign_key="inferenceclient.id")
-    client: InferenceClient = Relationship()
+
 
 # --- CHAT LAYER (User Facing) ---
 class Client(BaseUUIDModel, table=True):
     name: str
     client_key: str = Field(unique=True, index=True) # La llave que enviará JotaDesktop
     is_active: bool = Field(default=True)
-    max_concurrent_sessions: int = Field(default=1)
     
     # Relación: Un cliente puede tener muchas conversaciones
     conversations: List["Conversation"] = Relationship(back_populates="client")
@@ -91,8 +81,7 @@ class Conversation(BaseUUIDModel, table=True):
     client_id: int = Field(foreign_key="client.id")
     client: Client = Relationship(back_populates="conversations")
     
-    # Vinculación opcional con InferenceSession (Loose coupling)
-    inference_session_id: Optional[str] = None 
+
     
     # Relación: Una conversación tiene muchos mensajes
     messages: List["Message"] = Relationship(back_populates="conversation")
