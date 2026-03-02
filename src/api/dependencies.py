@@ -101,3 +101,42 @@ def get_inference_service(
         )
         
     return service
+
+def get_any_authenticated_caller(
+    x_api_key: str = Header(..., description="API Key for authentication"),
+    session: Session = Depends(get_session)
+):
+    """
+    Authenticates the request based on X-API-Key.
+    Allows BOTH direct clients and internal services, without requiring x-client-id.
+    Useful for global endpoints like listing AI models.
+    """
+    # 1. Try Direct Client Access
+    statement = select(Client).where(Client.client_key == x_api_key)
+    client = session.exec(statement).first()
+    
+    if client:
+        if not client.is_active:
+             raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Client is inactive"
+            )
+        return client
+
+    # 2. Try Service Access
+    statement = select(InferenceClient).where(InferenceClient.api_key == x_api_key)
+    service = session.exec(statement).first()
+    
+    if service:
+        if not service.is_active:
+             raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Service is inactive"
+            )
+        return service
+        
+    # 3. Auth Failed
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Invalid API Key"
+    )

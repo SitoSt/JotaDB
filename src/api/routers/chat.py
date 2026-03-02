@@ -7,13 +7,13 @@ from enum import Enum
 
 from src.core.database import get_session
 from src.core.models import Conversation, Message, Client, AIModel, InferenceClient
-from src.api.dependencies import get_current_client, get_inference_service
+from src.api.dependencies import get_current_client, get_inference_service, get_any_authenticated_caller
 from src.api.security import verify_api_key
 
 router = APIRouter(
     prefix="/chat",
     tags=["Chat"],
-    responses={404: {"description": "Not found"}}
+
 )
 
 # --- DTOs ---
@@ -44,7 +44,7 @@ class AIModelRead(BaseModel):
 @router.get("/models", response_model=List[AIModelRead])
 def list_models(
     session: Session = Depends(get_session),
-    client: Client = Depends(get_current_client),
+    caller = Depends(get_any_authenticated_caller),
     _: bool = Depends(verify_api_key)
 ):
     """Devuelve la lista de modelos disponibles con todos sus atributos."""
