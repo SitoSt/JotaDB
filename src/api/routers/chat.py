@@ -19,7 +19,13 @@ router = APIRouter(
 # --- DTOs ---
 class ConversationCreate(BaseModel):
     title: Optional[str] = None
+    ai_model_id: Optional[str] = None  # Modelo de IA inicial para esta conversación
 
+class ConversationUpdate(BaseModel):
+    """Permite actualizar campos mutables de una conversación, como el modelo de IA activo."""
+    title: Optional[str] = None
+    ai_model_id: Optional[str] = None
+    status: Optional[str] = None
 
 
 class MessageRole(str, Enum):
@@ -30,6 +36,7 @@ class MessageRole(str, Enum):
 class MessageCreate(BaseModel):
     role: MessageRole
     content: str
+    ai_model_id: Optional[str] = None  # Modelo que generó este mensaje (obligatorio para role=assistant)
 
 class AIModelRead(BaseModel):
     id: str
@@ -63,7 +70,8 @@ def create_conversation(
 
     conversation = Conversation(
         client_id=client.id,
-        title=conv_data.title
+        title=conv_data.title,
+        ai_model_id=conv_data.ai_model_id
     )
     session.add(conversation)
     session.commit()
@@ -86,6 +94,40 @@ def list_conversations(
         
     query = query.order_by(Conversation.updated_at.desc()).limit(limit)
     return session.exec(query).all()
+
+@router.patch("/conversations/{conversation_id}", response_model=Conversation)
+def update_conversation(
+    conversation_id: int,
+    update_data: ConversationUpdate,
+    session: Session = Depends(get_session),
+    client: Client = Depends(get_current_client),
+    _: bool = Depends(verify_api_key)
+):
+    """Actualiza una conversación: puede cambiar el modelo de IA activo, el título o el estado."""
+    conversation = session.get(Conversation, conversation_id)
+    if not conversation:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    if conversation.client_id != client.id:
+        raise HTTPException(status_code=403, detail="Not authorized to modify this conversation")
+
+    if update_data.ai_model_id is not None:
+        # Verificar que el modelo existe
+        model = session.get(AIModel, update_data.ai_model_id)
+        if not model:
+            raise HTTPException(status_code=404, detail=f"AI model '{update_data.ai_model_id}' not found")
+        conversation.ai_model_id = update_data.ai_model_id
+
+    if update_data.title is not None:
+        conversation.title = update_data.title
+
+    if update_data.status is not None:
+        conversation.status = update_data.status
+
+    conversation.updated_at = datetime.utcnow()
+    session.add(conversation)
+    session.commit()
+    session.refresh(conversation)
+    return conversation
 
 @router.get("/{conversation_id}/messages", response_model=List[Message])
 def get_conversation_messages(
@@ -130,7 +172,8 @@ def create_message(
     message = Message(
         conversation_id=conversation_id,
         role=message_data.role.value,
-        content=message_data.content
+        content=message_data.content,
+        ai_model_id=message_data.ai_model_id
     )
     
     # Actualizar timestamp de la conversación

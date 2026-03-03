@@ -83,6 +83,11 @@ class AIModel(BaseStringModel, table=True):
     gpu_layers: int = Field(default=-1)
     description: Optional[str] = None
 
+    # Relación inversa: conversaciones que usan este modelo
+    conversations: List["Conversation"] = Relationship(back_populates="ai_model")
+    # Relación inversa: mensajes generados con este modelo
+    messages: List["Message"] = Relationship(back_populates="ai_model")
+
 # --- CHAT LAYER (User Facing) ---
 class Client(BaseStringModel, table=True):
     name: str # Mantenemos name para la UI si hace falta
@@ -100,7 +105,9 @@ class Conversation(BaseNumericModel, table=True):
     client_id: str = Field(foreign_key="client.id")
     client: Client = Relationship(back_populates="conversations")
     
-
+    # Modelo de IA activo para esta conversación (puede cambiar)
+    ai_model_id: Optional[str] = Field(default=None, foreign_key="aimodel.id")
+    ai_model: Optional["AIModel"] = Relationship(back_populates="conversations")
     
     # Relación: Una conversación tiene muchos mensajes
     messages: List["Message"] = Relationship(back_populates="conversation")
@@ -112,3 +119,7 @@ class Message(BaseUUIDModel, table=True):
     # Vinculación con Conversation (Conversation usa int)
     conversation_id: int = Field(foreign_key="conversation.id")
     conversation: Conversation = Relationship(back_populates="messages")
+    
+    # Modelo de IA que generó este mensaje (relevante para mensajes de rol "assistant")
+    ai_model_id: Optional[str] = Field(default=None, foreign_key="aimodel.id")
+    ai_model: Optional["AIModel"] = Relationship(back_populates="messages")
